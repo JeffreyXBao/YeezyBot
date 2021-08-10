@@ -2,9 +2,9 @@
   "name": "yeezybot",
   "version": "1.0.0",
   "description": "YeezySupply Bot",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node main.js"
   },
   "repository": {
     "type": "git",
