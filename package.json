@@ -1,0 +1,24 @@
+{
+  "name": "yeezybot",
+  "version": "1.0.0",
+  "description": "YeezySupply Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JeffreyXBao/YeezyBot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JeffreyXBao/YeezyBot/issues"
+  },
+  "homepage": "https://github.com/JeffreyXBao/YeezyBot#readme",
+  "dependencies": {
+    "puppeteer": "^10.2.0",
+    "puppeteer-extra": "^3.1.18",
+    "puppeteer-extra-plugin-stealth": "^2.7.8"
+  }
+}
