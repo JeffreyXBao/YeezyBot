@@ -15,7 +15,7 @@ exports.login = async function() {
         page.goto('https://mail.google.com');
         return [browser, page];
     } catch (error) {
-        console.log("Gmail login error.");
+        console.log('Gmail login error.');
         await browser.close();
         return null;
     }
@@ -32,15 +32,11 @@ exports.testCookies = async function(cookies) {
     await page.setCookie(...cookies);
 
     try {
-        page.goto('https://mail.google.com');
+        page.goto('https://antcpt.com/score_detector/');
         return [browser, page];
     } catch (error) {
-        console.log("Gmail login error.");
+        console.log('Gmail login error.');
         await browser.close();
         return null;
     }
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }

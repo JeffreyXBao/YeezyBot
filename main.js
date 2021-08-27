@@ -1,5 +1,6 @@
 var readline = require('readline');
 var gmailManager = require('./gmailManager.js');
+var taskManager = require('./taskManager.js');
 
 async function main() {
     let cookies = null;
@@ -9,7 +10,10 @@ async function main() {
     rl.question('Press enter when done logging in ', async (txt) => {
         cookies = await loginPage.cookies();
         await browser.close();
-        gmailManager.testCookies(cookies);
+        //gmailManager.testCookies(cookies);
+        //taskManager.testProxy('proxy.packetstream.io:31112', cookies);
+        taskManager.main(cookies);
+        //taskManager.freeProxies();
         rl.close();
     });
 }
