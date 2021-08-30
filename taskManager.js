@@ -7,20 +7,6 @@ puppeteer.use(StealthPlugin())
 // array of proxy servers
 var proxies = [];
 
-// update array based on txt file
-function getProxies() {
-    return new Promise((resolve, reject) => {
-        fs.readFile('proxies.txt', 'utf8', (err, data) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            proxies = data.split("\n");
-            resolve();
-        });
-    });
-}
-
 // get free proxies from geonode
 function getFreeProxies() {
     return new Promise((resolve, reject) => {
@@ -51,7 +37,7 @@ function getFreeProxies() {
 }
 
 // initiate a proxied connection
-async function connectProxied(proxy, cookies) {
+exports.connectProxied = async function(url, proxy, cookies, login) {
     const browser = await puppeteer.launch({
         //headless: false,
         args: [
@@ -60,16 +46,90 @@ async function connectProxied(proxy, cookies) {
     });
     const page = await browser.newPage();
     await page.setCookie(...cookies);
+    await page.authenticate(login);
 
     try {
-        await page.goto('https://www.yeezysupply.com');
+        await page.goto(url);
         let contents = await page.content();
         if (contents.includes('403')) {
-            console.log('Error 403');
+            console.log('Error 403: UNABLE TO GIVE YOU ACCESS');
             await browser.close();
             return;
         }
         console.log(`\nSuccess on ${proxy}\n`);
+
+        while(true) {
+            await sleep(100);
+
+            contents = await page.content();
+
+            let [purchaseButton] = await page.$x("//button[contains(., 'Purchase')]");
+            // handle cases where the case is weird
+            if (!purchaseButton) { [purchaseButton] = await page.$x("//button[contains(., 'purchase')]"); }
+            if (!purchaseButton) { [purchaseButton] = await page.$x("//button[contains(., 'PURCHASE')]"); }
+
+            if (purchaseButton) {
+                console.log("QUEUE POPPED!!!");
+                fs.writeFile(`./scrapes/${Date.now()}.txt`, contents, (err) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    console.log('Product add saved!');
+                });
+
+                let [sizeButton] = await page.$x("//button[contains(., 'Size')]");
+                // handle cases where the case is weird
+                if (!sizeButton) { [sizeButton] = await page.$x("//button[contains(., 'size')]"); }
+                if (!sizeButton) { [sizeButton] = await page.$x("//button[contains(., 'SIZE')]"); }
+                if (sizeButton) { await sizeButton.click(); }
+
+                await sleep(100);
+
+                contents = await page.content();
+                fs.writeFile(`./scrapes/${Date.now()}.txt`, contents, (err) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    console.log('Size select saved!');
+                });
+
+                let [dropdown] = await page.$x("select");
+                if (dropdown) {
+                    page.select('select', '10'); // TODO: allow different sizes
+                }
+
+                await sleep(100);
+
+                [purchaseButton] = await page.$x("//button[contains(., 'Purchase')]");
+                // handle cases where the case is weird
+                if (!purchaseButton) { [purchaseButton] = await page.$x("//button[contains(., 'purchase')]"); }
+                if (!purchaseButton) { [purchaseButton] = await page.$x("//button[contains(., 'PURCHASE')]"); }
+                if (purchaseButton) { await purchaseButton.click(); }
+
+                await sleep(100);
+
+                let [checkoutButton] = await page.$x("//button[contains(., 'Checkout')]");
+                // handle cases where the case is weird
+                if (!checkoutButton) { [checkoutButton] = await page.$x("//button[contains(., 'checkout')]"); }
+                if (!checkoutButton) { [checkoutButton] = await page.$x("//button[contains(., 'CHECKOUT')]"); }
+                if (checkoutButton) { await checkoutButton.click(); }
+
+                await sleep(1000);
+
+                contents = await page.content();
+                fs.writeFile(`./scrapes/${Date.now()}.txt`, contents, (err) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    console.log('Checkout saved!');
+                });
+
+                let newCookies = await page.cookies();
+                let newUrl = await page.url();
+                await browser.close();
+                openHeadful(newUrl, proxy, newCookies, login);
+            }
+        }
     } catch (error) {
         console.log('Error loading site: ' + error);
         await browser.close();
@@ -77,13 +137,23 @@ async function connectProxied(proxy, cookies) {
     }
 }
 
-// init the taskManager process
-exports.main = async function(cookies) {
-    await getFreeProxies();
-    //await getProxies();
-    for (let i = 0; i < proxies.length; i++) {
-        connectProxied(proxies[i], cookies);
-        await sleep(300);
+async function openHeadful(url, proxy, cookies, login) {
+    const browser = await puppeteer.launch({
+        headless: false,
+        args: [
+            `--proxy-server=${proxy}`
+        ]
+    });
+    const page = await browser.newPage();
+    await page.setCookie(...cookies);
+    await page.authenticate(login);
+
+    try {
+        page.goto(url);
+    } catch (error) {
+        console.log('Gmail login error.');
+        await browser.close();
+        return null;
     }
 }
 
@@ -91,15 +161,4 @@ function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
-}   
-
-// test a single proxy
-exports.testProxy = async function(proxy, cookies) {
-    connectProxied(proxy, cookies);
-};
-
-// test auto proxies
-exports.freeProxies = async function() {
-    await getFreeProxies();
-    console.log(proxies);
-};
+}
